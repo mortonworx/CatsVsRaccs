@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 BUILD = ROOT / "build"
 ARTIFACTS = ROOT / "release-artifacts"
+PACKAGE_ROOT = ROOT / "release-package"
 VERSION = os.environ.get("APP_VERSION", "0.0.1rc1")
 APP_NAME = "CatsVsRaccs"
 APP_ICON_PNG = ROOT / "assets" / "app_icon.png"
@@ -37,12 +38,44 @@ def current_target():
 
 def archive(path_to_package, artifact_base):
     ARTIFACTS.mkdir(exist_ok=True)
-    archive_path = shutil.make_archive(
-        str(ARTIFACTS / artifact_base),
-        "zip",
-        root_dir=path_to_package.parent,
-        base_dir=path_to_package.name,
-    )
+
+    if platform.system() == "Darwin":
+        package_dir = PACKAGE_ROOT / artifact_base
+        shutil.rmtree(package_dir, ignore_errors=True)
+        package_dir.mkdir(parents=True, exist_ok=True)
+
+        bundled_app = package_dir / f"{APP_NAME}.app"
+        shutil.copytree(path_to_package, bundled_app)
+
+        launcher = package_dir / f"Open {APP_NAME}.command"
+        launcher.write_text(
+            "\n".join([
+                "#!/bin/bash",
+                'set -e',
+                'SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"',
+                f'APP_PATH="$SCRIPT_DIR/{APP_NAME}.app"',
+                'xattr -dr com.apple.quarantine "$APP_PATH" 2>/dev/null || true',
+                'open "$APP_PATH"',
+                "",
+            ]),
+            encoding="utf-8",
+        )
+        launcher.chmod(0o755)
+
+        archive_path = shutil.make_archive(
+            str(ARTIFACTS / artifact_base),
+            "zip",
+            root_dir=PACKAGE_ROOT,
+            base_dir=artifact_base,
+        )
+    else:
+        archive_path = shutil.make_archive(
+            str(ARTIFACTS / artifact_base),
+            "zip",
+            root_dir=path_to_package.parent,
+            base_dir=path_to_package.name,
+        )
+
     return Path(archive_path)
 
 
@@ -80,6 +113,7 @@ def main():
     shutil.rmtree(DIST, ignore_errors=True)
     shutil.rmtree(BUILD, ignore_errors=True)
     shutil.rmtree(ARTIFACTS, ignore_errors=True)
+    shutil.rmtree(PACKAGE_ROOT, ignore_errors=True)
 
     cmd = [
         sys.executable,
