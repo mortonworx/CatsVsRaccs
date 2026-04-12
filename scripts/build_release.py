@@ -48,18 +48,29 @@ def archive(path_to_package, artifact_base):
 
 def find_generated_app(expected_name):
     direct_path = DIST / expected_name
-    if direct_path.exists():
+    if direct_path.is_dir():
         return direct_path
 
-    matches = sorted(DIST.rglob(expected_name))
-    if matches:
-        return matches[0]
+    bundle_matches = sorted(
+        path for path in DIST.rglob("*.app")
+        if path.is_dir()
+    )
+    if not bundle_matches:
+        raise FileNotFoundError(f"Expected built app bundle under {DIST}")
 
-    app_matches = sorted(DIST.rglob("*.app"))
-    if len(app_matches) == 1:
-        return app_matches[0]
+    # Nuitka can emit a top-level bundle like "main.app" while placing the
+    # requested output filename on the inner executable. We want the outer
+    # bundle users can double-click, not the nested Mach-O file.
+    package_path = min(bundle_matches, key=lambda path: (len(path.parts), str(path)))
 
-    raise FileNotFoundError(f"Expected built app named {expected_name} under {DIST}")
+    renamed_path = DIST / expected_name
+    if package_path != renamed_path:
+        if renamed_path.exists():
+            shutil.rmtree(renamed_path)
+        package_path.rename(renamed_path)
+        return renamed_path
+
+    return package_path
 
 
 def main():
