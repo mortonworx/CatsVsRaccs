@@ -46,6 +46,22 @@ def archive(path_to_package, artifact_base):
     return Path(archive_path)
 
 
+def find_generated_app(expected_name):
+    direct_path = DIST / expected_name
+    if direct_path.exists():
+        return direct_path
+
+    matches = sorted(DIST.rglob(expected_name))
+    if matches:
+        return matches[0]
+
+    app_matches = sorted(DIST.rglob("*.app"))
+    if len(app_matches) == 1:
+        return app_matches[0]
+
+    raise FileNotFoundError(f"Expected built app named {expected_name} under {DIST}")
+
+
 def main():
     target = current_target()
     artifact_base = f"{APP_NAME}-{VERSION}-{target}"
@@ -72,7 +88,7 @@ def main():
             f"--macos-app-icon={APP_ICON_PNG}",
             f"--output-filename={app_name}",
         ])
-        package_path = DIST / app_name
+        package_path = None
     elif platform.system() == "Windows":
         exe_name = f"{artifact_base}.exe"
         cmd.extend([
@@ -86,6 +102,9 @@ def main():
         raise RuntimeError(f"Unsupported build platform: {platform.system()}")
 
     run(cmd)
+
+    if platform.system() == "Darwin":
+        package_path = find_generated_app(app_name)
 
     if not package_path.exists():
         raise FileNotFoundError(f"Expected built package at {package_path}")
