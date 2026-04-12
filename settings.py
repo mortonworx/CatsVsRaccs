@@ -1,3 +1,13 @@
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def resource_path(*parts):
+    return str(BASE_DIR.joinpath(*parts))
+
+
 TITLE = "Cats vs Raccoons - Turf Defenders"
 
 WINDOW_WIDTH = 1100
@@ -29,7 +39,7 @@ GOAL_PADDING = 35
 ATTACK_RANGE = 52
 ATTACK_COOLDOWN = 0.75
 
-SPRITE_SHEET_PATH = "assets/cats_raccoons_walk_attack_pretty.png"
+SPRITE_SHEET_PATH = resource_path("assets", "cats_raccoons_walk_attack_pretty.png")
 SPRITE_CELL_W = 96
 SPRITE_CELL_H = 96
 SPRITE_SCALE = 1.0
