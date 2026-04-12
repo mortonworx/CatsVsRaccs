@@ -12,6 +12,7 @@ permissions:
 env:
   APP_VERSION: 0.0.1rc1
   PYTHON_VERSION: "3.11"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
+          - os: macos-15-intel
             artifact_name: catsvsraccs-macos-x64
           - os: macos-14
             artifact_name: catsvsraccs-macos-arm64
@@ -38,10 +39,17 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install build dependencies
-        run: python -m pip install --upgrade pip setuptools wheel nuitka zstandard ordered-set pillow
+        run: python -m pip install --upgrade pip setuptools wheel nuitka zstandard ordered-set pillow imageio
 
       - name: Build release binary
+        if: runner.os != 'Windows'
         run: python scripts/build_release.py
+
+      - name: Build release binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          "yes" | python scripts/build_release.py
 
       - name: Upload packaged artifact
         uses: actions/upload-artifact@v4
