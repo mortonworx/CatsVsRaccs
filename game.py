@@ -32,24 +32,30 @@ class GameApp:
         self.state = "title"
         self.player_team = "cats"
         self.ai_team = "raccoons"
+        self.selected_difficulty = "novice"
         self.selected_unit_kind = "strong"
 
         self.reset_match()
         self.game_loop()
 
     def reset_match(self):
+        difficulty = settings.DIFFICULTY_SETTINGS[self.selected_difficulty]
+
         self.cats = []
         self.raccoons = []
 
-        self.cat_turf_hp = settings.STARTING_TURF_HP
-        self.raccoon_turf_hp = settings.STARTING_TURF_HP
+        self.cat_turf_hp = difficulty["starting_turf_hp"]
+        self.raccoon_turf_hp = difficulty["starting_turf_hp"]
 
-        self.energy = 75.0
+        self.energy = difficulty["starting_energy"]
         self.score = 0
         self.message = "Choose a side to begin."
 
         self.ai_spawn_timer = 0.0
-        self.next_ai_spawn = random.uniform(settings.AI_SPAWN_MIN, settings.AI_SPAWN_MAX)
+        self.next_ai_spawn = random.uniform(
+            difficulty["ai_spawn_min"],
+            difficulty["ai_spawn_max"],
+        )
 
         self.game_over = False
         self.winner_text = ""
@@ -58,16 +64,27 @@ class GameApp:
     def start_game(self, team):
         self.player_team = team
         self.ai_team = "raccoons" if team == "cats" else "cats"
+        self.state = "difficulty"
+        self.message = "Choose difficulty: 1 Easy, 2 Novice, 3 Expert."
+
+    def start_match(self, difficulty):
+        self.selected_difficulty = difficulty
         self.state = "playing"
         self.selected_unit_kind = "strong"
         self.reset_match()
-        self.message = "Pick unit type with 1/2/3, then lane with Q/W/E."
+        self.message = (
+            f"{self.difficulty_name(difficulty)} mode. "
+            "Pick unit type with 1/2/3, then lane with Q/W/E."
+        )
 
     def team_name(self, team):
         return "Cats" if team == "cats" else "Raccoons"
 
     def unit_name(self, unit_kind):
         return unit_kind.capitalize()
+
+    def difficulty_name(self, difficulty):
+        return settings.DIFFICULTY_SETTINGS[difficulty]["label"]
 
     def get_team_list(self, team):
         return self.cats if team == "cats" else self.raccoons
@@ -102,6 +119,15 @@ class GameApp:
                 self.start_game("cats")
             elif key == "r":
                 self.start_game("raccoons")
+            return
+
+        if self.state == "difficulty":
+            difficulty_map = {"1": "easy", "2": "novice", "3": "expert"}
+            if key in difficulty_map:
+                self.start_match(difficulty_map[key])
+            elif key == "escape":
+                self.state = "title"
+                self.reset_match()
             return
 
         if key == "escape":
@@ -150,14 +176,19 @@ class GameApp:
 
         self.energy = min(
             settings.ENERGY_MAX,
-            self.energy + settings.ENERGY_REGEN_PER_SECOND * dt
+            self.energy
+            + settings.DIFFICULTY_SETTINGS[self.selected_difficulty]["energy_regen_per_second"] * dt
         )
 
         self.ai_spawn_timer += dt
         if self.ai_spawn_timer >= self.next_ai_spawn:
             self.spawn_ai_unit()
             self.ai_spawn_timer = 0.0
-            self.next_ai_spawn = random.uniform(settings.AI_SPAWN_MIN, settings.AI_SPAWN_MAX)
+            difficulty = settings.DIFFICULTY_SETTINGS[self.selected_difficulty]
+            self.next_ai_spawn = random.uniform(
+                difficulty["ai_spawn_min"],
+                difficulty["ai_spawn_max"],
+            )
 
         self.update_team(self.cats, self.raccoons, now, dt)
         self.update_team(self.raccoons, self.cats, now, dt)
@@ -260,6 +291,10 @@ class GameApp:
             self.draw_title_screen()
             return
 
+        if self.state == "difficulty":
+            self.draw_difficulty_screen()
+            return
+
         self.draw_background()
         self.draw_hud()
         self.draw_units()
@@ -275,6 +310,45 @@ class GameApp:
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 300, text="Press R to Play as Raccoons", font=("Arial", 22, "bold"), fill="#222")
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 380, text="Strong = 1, Fast = 2, Tough = 3", font=("Arial", 16), fill="#222")
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 410, text="Use Q / W / E for top / middle / bottom lane", font=("Arial", 16), fill="#222")
+
+    def draw_difficulty_screen(self):
+        self.canvas.create_rectangle(0, 0, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, fill="#b9e3a6", outline="")
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 130,
+            text=f"You chose {self.team_name(self.player_team)}",
+            font=("Arial", 28, "bold"),
+            fill="#222",
+        )
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 190,
+            text="Choose Difficulty",
+            font=("Arial", 24, "bold"),
+            fill="#222",
+        )
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 270,
+            text="1 = Easy",
+            font=("Arial", 22, "bold"),
+            fill="#222",
+        )
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 320,
+            text="2 = Novice",
+            font=("Arial", 22, "bold"),
+            fill="#222",
+        )
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 370,
+            text="3 = Expert",
+            font=("Arial", 22, "bold"),
+            fill="#222",
+        )
+        self.canvas.create_text(
+            settings.WINDOW_WIDTH // 2, 450,
+            text="Esc = back to team select",
+            font=("Arial", 16),
+            fill="#333",
+        )
 
     def draw_background(self):
         self.canvas.create_rectangle(0, 0, settings.LEFT_TURF_X, settings.WINDOW_HEIGHT, fill="#8dcf8f", outline="")
@@ -309,6 +383,7 @@ class GameApp:
             settings.WINDOW_WIDTH // 2, 55,
             text=(
                 f"You are: {self.team_name(self.player_team)}"
+                f"   |   Difficulty: {self.difficulty_name(self.selected_difficulty)}"
                 f"   |   Energy: {int(self.energy)}/{settings.ENERGY_MAX}"
                 f"   |   Selected: {self.unit_name(self.selected_unit_kind)}"
                 f"   |   Cost: {unit_stats['cost']}"
@@ -342,8 +417,9 @@ class GameApp:
             fill=settings.TEXT_COLOR
         )
 
-        self.draw_health_bar(20, 52, self.cat_turf_hp, settings.STARTING_TURF_HP, "Cats")
-        self.draw_health_bar(settings.WINDOW_WIDTH - 210, 52, self.raccoon_turf_hp, settings.STARTING_TURF_HP, "Raccoons")
+        max_turf_hp = settings.DIFFICULTY_SETTINGS[self.selected_difficulty]["starting_turf_hp"]
+        self.draw_health_bar(20, 52, self.cat_turf_hp, max_turf_hp, "Cats")
+        self.draw_health_bar(settings.WINDOW_WIDTH - 210, 52, self.raccoon_turf_hp, max_turf_hp, "Raccoons")
 
     def draw_health_bar(self, x, y, value, max_value, label):
         width = 160

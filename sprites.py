@@ -35,6 +35,9 @@ class SpriteManager:
             offset_y = max_h - frame.height
             normalized.paste(frame, (offset_x, offset_y), frame)
 
+            if team == "raccoons":
+                normalized = normalized.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+
             new_w = max(1, int(normalized.width * settings.SPRITE_SCALE))
             new_h = max(1, int(normalized.height * settings.SPRITE_SCALE))
             normalized = normalized.resize((new_w, new_h), Image.Resampling.LANCZOS)

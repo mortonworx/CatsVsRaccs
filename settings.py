@@ -27,6 +27,7 @@ TEXT_COLOR = "#1f1f1f"
 
 ENERGY_MAX = 120
 ENERGY_REGEN_PER_SECOND = 18
+STARTING_ENERGY = 75.0
 
 AI_SPAWN_MIN = 1.4
 AI_SPAWN_MAX = 2.5
@@ -46,6 +47,33 @@ SPRITE_SCALE = 1.0
 SPRITE_CAPTURE_PADDING = 0
 
 ANIMATION_FRAME_TIME = 0.14
+
+DIFFICULTY_SETTINGS = {
+    "easy": {
+        "label": "Easy",
+        "starting_energy": 95.0,
+        "energy_regen_per_second": 22,
+        "ai_spawn_min": 1.9,
+        "ai_spawn_max": 3.2,
+        "starting_turf_hp": 18,
+    },
+    "novice": {
+        "label": "Novice",
+        "starting_energy": STARTING_ENERGY,
+        "energy_regen_per_second": ENERGY_REGEN_PER_SECOND,
+        "ai_spawn_min": AI_SPAWN_MIN,
+        "ai_spawn_max": AI_SPAWN_MAX,
+        "starting_turf_hp": STARTING_TURF_HP,
+    },
+    "expert": {
+        "label": "Expert",
+        "starting_energy": 60.0,
+        "energy_regen_per_second": 14,
+        "ai_spawn_min": 0.95,
+        "ai_spawn_max": 1.8,
+        "starting_turf_hp": 12,
+    },
+}
 
 UNIT_TYPES = {
     "strong": {
