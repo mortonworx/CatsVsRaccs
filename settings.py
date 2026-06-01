@@ -46,6 +46,19 @@ SPRITE_CELL_H = 96
 SPRITE_SCALE = 1.0
 SPRITE_CAPTURE_PADDING = 0
 
+TITLE_THEME_PATH = resource_path("assets", "audio", "music", "title_theme.wav")
+BATTLE_THEME_PATH = resource_path("assets", "audio", "music", "battle_theme.wav")
+EXPERT_THEME_PATH = resource_path("assets", "audio", "music", "expert_theme.wav")
+
+UI_SELECT_SOUND_PATH = resource_path("assets", "audio", "sfx", "ui_select.wav")
+SPAWN_SOUND_PATH = resource_path("assets", "audio", "sfx", "spawn_unit.wav")
+ATTACK_SOUND_PATH = resource_path("assets", "audio", "sfx", "attack_swipe.wav")
+HIT_SOUND_PATH = resource_path("assets", "audio", "sfx", "hit_impact.wav")
+BREAKTHROUGH_SOUND_PATH = resource_path("assets", "audio", "sfx", "turf_breakthrough.wav")
+NOT_ENOUGH_ENERGY_SOUND_PATH = resource_path("assets", "audio", "sfx", "not_enough_energy.wav")
+WIN_SOUND_PATH = resource_path("assets", "audio", "sfx", "win_jingle.wav")
+LOSE_SOUND_PATH = resource_path("assets", "audio", "sfx", "lose_sting.wav")
+
 ANIMATION_FRAME_TIME = 0.14
 
 DIFFICULTY_SETTINGS = {

@@ -2,6 +2,7 @@ import random
 import time
 import tkinter as tk
 
+from audio import AudioManager
 import settings
 from entities import make_fighter
 from sprites import SpriteManager
@@ -23,8 +24,10 @@ class GameApp:
         self.canvas.pack()
 
         self.root.bind("<KeyPress>", self.on_key_press)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.sprites = SpriteManager()
+        self.audio = AudioManager()
 
         self.running = True
         self.last_time = time.perf_counter()
@@ -34,9 +37,15 @@ class GameApp:
         self.ai_team = "raccoons"
         self.selected_difficulty = "novice"
         self.selected_unit_kind = "strong"
+        self.music_enabled = True
 
         self.reset_match()
         self.game_loop()
+
+    def on_close(self):
+        self.running = False
+        self.audio.shutdown()
+        self.root.destroy()
 
     def reset_match(self):
         difficulty = settings.DIFFICULTY_SETTINGS[self.selected_difficulty]
@@ -66,6 +75,7 @@ class GameApp:
         self.ai_team = "raccoons" if team == "cats" else "cats"
         self.state = "difficulty"
         self.message = "Choose difficulty: 1 Easy, 2 Novice, 3 Expert."
+        self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
 
     def start_match(self, difficulty):
         self.selected_difficulty = difficulty
@@ -76,6 +86,7 @@ class GameApp:
             f"{self.difficulty_name(difficulty)} mode. "
             "Pick unit type with 1/2/3, then lane with Q/W/E."
         )
+        self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
 
     def team_name(self, team):
         return "Cats" if team == "cats" else "Raccoons"
@@ -85,6 +96,18 @@ class GameApp:
 
     def difficulty_name(self, difficulty):
         return settings.DIFFICULTY_SETTINGS[difficulty]["label"]
+
+    def music_label(self):
+        return "On" if self.music_enabled else "Off"
+
+    def toggle_music(self):
+        self.music_enabled = not self.music_enabled
+        if self.music_enabled:
+            self.message = "Music enabled."
+        else:
+            self.audio.stop_music()
+            self.message = "Music disabled."
+        self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
 
     def get_team_list(self, team):
         return self.cats if team == "cats" else self.raccoons
@@ -98,11 +121,13 @@ class GameApp:
         cost = settings.UNIT_TYPES[self.selected_unit_kind]["cost"]
         if self.energy < cost:
             self.message = f"Not enough treats for {self.unit_name(self.selected_unit_kind)}."
+            self.audio.play_sound(settings.NOT_ENOUGH_ENERGY_SOUND_PATH)
             return
 
         self.spawn_unit(self.player_team, self.selected_unit_kind, lane)
         self.energy -= cost
         self.message = f"Sent {self.unit_name(self.selected_unit_kind)} {self.team_name(self.player_team)} to lane {lane + 1}."
+        self.audio.play_sound(settings.SPAWN_SOUND_PATH)
 
     def spawn_ai_unit(self):
         lane = random.randint(0, settings.LANE_COUNT - 1)
@@ -110,9 +135,14 @@ class GameApp:
         weights = [45, 35, 20]
         unit_kind = random.choices(choices, weights=weights, k=1)[0]
         self.spawn_unit(self.ai_team, unit_kind, lane)
+        self.audio.play_sound(settings.SPAWN_SOUND_PATH)
 
     def on_key_press(self, event):
         key = event.keysym.lower()
+
+        if key == "m":
+            self.toggle_music()
+            return
 
         if self.state == "title":
             if key == "c":
@@ -128,11 +158,13 @@ class GameApp:
             elif key == "escape":
                 self.state = "title"
                 self.reset_match()
+                self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
             return
 
         if key == "escape":
             self.state = "title"
             self.reset_match()
+            self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
             return
 
         if key == "r" and self.game_over:
@@ -145,14 +177,17 @@ class GameApp:
         if key == "1":
             self.selected_unit_kind = "strong"
             self.message = "Selected Strong unit. Choose lane with Q/W/E."
+            self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
             return
         if key == "2":
             self.selected_unit_kind = "fast"
             self.message = "Selected Fast unit. Choose lane with Q/W/E."
+            self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
             return
         if key == "3":
             self.selected_unit_kind = "tough"
             self.message = "Selected Tough unit. Choose lane with Q/W/E."
+            self.audio.play_sound(settings.UI_SELECT_SOUND_PATH)
             return
 
         lane_map = {"q": 0, "w": 1, "e": 2}
@@ -165,6 +200,7 @@ class GameApp:
         self.last_time = now
 
         if self.running:
+            self.sync_music()
             self.update(dt, now)
             self.draw()
 
@@ -207,6 +243,8 @@ class GameApp:
             if target and fighter.in_range_of(target):
                 if fighter.can_attack(now):
                     fighter.attack(target, now)
+                    self.audio.play_sound(settings.ATTACK_SOUND_PATH)
+                    self.audio.play_sound(settings.HIT_SOUND_PATH)
                 else:
                     fighter.idle()
             elif target:
@@ -252,6 +290,7 @@ class GameApp:
         for cat in self.cats:
             if cat.x >= settings.RIGHT_TURF_X - settings.GOAL_PADDING:
                 self.raccoon_turf_hp -= 1
+                self.audio.play_sound(settings.BREAKTHROUGH_SOUND_PATH)
                 if self.player_team == "cats":
                     self.score += 25
                     self.message = "Your cats pushed into raccoon turf!"
@@ -265,6 +304,7 @@ class GameApp:
         for raccoon in self.raccoons:
             if raccoon.x <= settings.LEFT_TURF_X + settings.GOAL_PADDING:
                 self.cat_turf_hp -= 1
+                self.audio.play_sound(settings.BREAKTHROUGH_SOUND_PATH)
                 if self.player_team == "raccoons":
                     self.score += 25
                     self.message = "Your raccoons pushed into cat turf!"
@@ -275,14 +315,40 @@ class GameApp:
         self.raccoons = remaining_raccoons
 
     def check_winner(self):
+        if self.game_over:
+            return
+
         if self.cat_turf_hp <= 0:
             self.game_over = True
             self.winner_text = "You defended raccoon turf!" if self.player_team == "raccoons" else "Raccoons defended their turf!"
             self.message = "Press R to replay or Esc for title."
+            if self.player_team == "raccoons":
+                self.audio.play_sound(settings.WIN_SOUND_PATH)
+            else:
+                self.audio.play_sound(settings.LOSE_SOUND_PATH)
         elif self.raccoon_turf_hp <= 0:
             self.game_over = True
             self.winner_text = "You defended cat turf!" if self.player_team == "cats" else "Cats defended their turf!"
             self.message = "Press R to replay or Esc for title."
+            if self.player_team == "cats":
+                self.audio.play_sound(settings.WIN_SOUND_PATH)
+            else:
+                self.audio.play_sound(settings.LOSE_SOUND_PATH)
+
+    def sync_music(self):
+        if not self.music_enabled:
+            self.audio.stop_music()
+            return
+
+        if self.state in {"title", "difficulty"}:
+            self.audio.play_music("title", settings.TITLE_THEME_PATH)
+            return
+
+        if self.state == "playing":
+            if self.selected_difficulty == "expert":
+                self.audio.play_music("expert", settings.EXPERT_THEME_PATH)
+            else:
+                self.audio.play_music("battle", settings.BATTLE_THEME_PATH)
 
     def draw(self):
         self.canvas.delete("all")
@@ -310,6 +376,7 @@ class GameApp:
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 300, text="Press R to Play as Raccoons", font=("Arial", 22, "bold"), fill="#222")
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 380, text="Strong = 1, Fast = 2, Tough = 3", font=("Arial", 16), fill="#222")
         self.canvas.create_text(settings.WINDOW_WIDTH // 2, 410, text="Use Q / W / E for top / middle / bottom lane", font=("Arial", 16), fill="#222")
+        self.canvas.create_text(settings.WINDOW_WIDTH // 2, 445, text=f"Press M to toggle music ({self.music_label()})", font=("Arial", 15), fill="#222")
 
     def draw_difficulty_screen(self):
         self.canvas.create_rectangle(0, 0, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, fill="#b9e3a6", outline="")
@@ -345,7 +412,7 @@ class GameApp:
         )
         self.canvas.create_text(
             settings.WINDOW_WIDTH // 2, 450,
-            text="Esc = back to team select",
+            text=f"Esc = back to team select   |   M = music {self.music_label()}",
             font=("Arial", 16),
             fill="#333",
         )
@@ -384,6 +451,7 @@ class GameApp:
             text=(
                 f"You are: {self.team_name(self.player_team)}"
                 f"   |   Difficulty: {self.difficulty_name(self.selected_difficulty)}"
+                f"   |   Music: {self.music_label()}"
                 f"   |   Energy: {int(self.energy)}/{settings.ENERGY_MAX}"
                 f"   |   Selected: {self.unit_name(self.selected_unit_kind)}"
                 f"   |   Cost: {unit_stats['cost']}"
@@ -405,7 +473,7 @@ class GameApp:
 
         self.canvas.create_text(
             settings.WINDOW_WIDTH // 2, 108,
-            text="1/2/3 = unit type, Q/W/E = lane, Esc = title",
+            text="1/2/3 = unit type, Q/W/E = lane, M = music, Esc = title",
             font=("Arial", 12),
             fill=settings.TEXT_COLOR
         )
