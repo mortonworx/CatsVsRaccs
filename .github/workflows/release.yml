@@ -2,15 +2,21 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to build and publish
+        required: true
+        default: v0.1.0
   push:
     tags:
-      - "v0.0.1rc1"
+      - "v*"
 
 permissions:
   contents: write
 
 env:
-  APP_VERSION: 0.0.1rc1
+  RELEASE_TAG: ${{ inputs.tag_name || github.ref_name }}
+  APP_VERSION: ${{ inputs.tag_name || github.ref_name }}
   PYTHON_VERSION: "3.11"
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
@@ -68,10 +74,10 @@ jobs:
         with:
           path: bundled-artifacts
 
-      - name: Publish GitHub prerelease
+      - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
-          tag_name: v${{ env.APP_VERSION }}
-          name: CatsVsRaccs v${{ env.APP_VERSION }}
+          prerelease: false
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: CatsVsRaccs ${{ env.RELEASE_TAG }}
           files: bundled-artifacts/**/*.zip
