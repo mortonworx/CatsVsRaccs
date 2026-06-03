@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cats-vs-raccs"
-version = "0.1.0"
+version = "0.1.2"
 description = "Cats vs Raccoons - Turf Defenders"
 requires-python = ">=3.11"
 dependencies = [

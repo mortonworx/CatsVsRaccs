@@ -3,6 +3,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 
@@ -11,10 +12,20 @@ DIST = ROOT / "dist"
 BUILD = ROOT / "build"
 ARTIFACTS = ROOT / "release-artifacts"
 PACKAGE_ROOT = ROOT / "release-package"
-VERSION = os.environ.get("APP_VERSION", "0.1.0").removeprefix("v")
+PYPROJECT = ROOT / "pyproject.toml"
 APP_NAME = "CatsVsRaccs"
 APP_ICON_PNG = ROOT / "assets" / "app_icon.png"
 APP_ICON_ICO = ROOT / "assets" / "app_icon.ico"
+
+
+def project_version():
+    env_version = os.environ.get("APP_VERSION")
+    if env_version:
+        return env_version.removeprefix("v")
+
+    with PYPROJECT.open("rb") as handle:
+        data = tomllib.load(handle)
+    return data["project"]["version"]
 
 
 def run(cmd):
@@ -107,8 +118,9 @@ def find_generated_app(expected_name):
 
 
 def main():
+    version = project_version()
     target = current_target()
-    artifact_base = f"{APP_NAME}-{VERSION}-{target}"
+    artifact_base = f"{APP_NAME}-{version}-{target}"
 
     shutil.rmtree(DIST, ignore_errors=True)
     shutil.rmtree(BUILD, ignore_errors=True)
