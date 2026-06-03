@@ -62,17 +62,17 @@ class Fighter:
             self.anim_index = (self.anim_index + 1) % 2
 
 
-def make_fighter(team, unit_kind, lane, x):
+def make_fighter(team, unit_kind, lane, x, stat_scale=1.0):
     stats = settings.UNIT_TYPES[unit_kind]
     return Fighter(
         team=team,
         unit_kind=unit_kind,
         lane=lane,
         x=x,
-        hp=stats["hp"],
-        max_hp=stats["hp"],
-        damage=stats["damage"],
-        speed=stats["speed"],
+        hp=max(1, int(round(stats["hp"] * stat_scale))),
+        max_hp=max(1, int(round(stats["hp"] * stat_scale))),
+        damage=max(1, int(round(stats["damage"] * stat_scale))),
+        speed=stats["speed"] * stat_scale,
         attack_range=settings.ATTACK_RANGE,
         attack_cooldown=settings.ATTACK_COOLDOWN,
     )

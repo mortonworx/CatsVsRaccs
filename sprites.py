@@ -1,4 +1,4 @@
-from PIL import Image, ImageTk
+from PIL import Image, ImageOps, ImageTk
 import settings
 
 
@@ -6,13 +6,16 @@ class SpriteManager:
     def __init__(self):
         self.sheet = Image.open(settings.SPRITE_SHEET_PATH).convert("RGBA")
         self.cache = {}
+        self.title_cache = None
+        self.overlay_cache = {}
 
     def get_frames(self, team, unit_kind, action):
         key = (team, unit_kind, action)
         if key in self.cache:
             return self.cache[key]
 
-        coords = settings.SPRITE_MAP[(team, unit_kind)][action]
+        sprite_style = settings.sprite_style(unit_kind)
+        coords = settings.SPRITE_MAP[(team, sprite_style)][action]
         source_frames = [self._extract_frame(col, row) for col, row in coords]
         boxes = [frame.getchannel("A").getbbox() for frame in source_frames]
 
@@ -60,3 +63,30 @@ class SpriteManager:
             min(self.sheet.height, y2 + padding),
         )
         return self.sheet.crop(padded_box)
+
+    def get_title_image(self, width, height):
+        if self.title_cache is not None:
+            return self.title_cache
+
+        title_art = Image.open(settings.TITLE_ART_PATH).convert("RGBA")
+        contained = ImageOps.contain(
+            title_art,
+            (width, height),
+            method=Image.Resampling.LANCZOS,
+        )
+        canvas = Image.new("RGBA", (width, height), (22, 16, 12, 255))
+        offset_x = (width - contained.width) // 2
+        offset_y = (height - contained.height) // 2
+        canvas.paste(contained, (offset_x, offset_y))
+        self.title_cache = ImageTk.PhotoImage(canvas)
+        return self.title_cache
+
+    def get_overlay_panel(self, width, height, rgba):
+        key = (width, height, rgba)
+        if key in self.overlay_cache:
+            return self.overlay_cache[key]
+
+        panel = Image.new("RGBA", (width, height), rgba)
+        image = ImageTk.PhotoImage(panel)
+        self.overlay_cache[key] = image
+        return image

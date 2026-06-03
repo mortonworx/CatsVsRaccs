@@ -1,0 +1,111 @@
+{
+  "_how_to_edit": [
+    "This file controls the game's unit balance, treats economy, and AI difficulty.",
+    "Kids can safely change numbers here without touching the Python code.",
+    "Each unit in unit_key_order gets a number key on the keyboard: first unit = 1, second unit = 2, and so on.",
+    "sprite_style must be fast, strong, or tough because the current sprite sheet only has art for those three styles.",
+    "level_count is the total number of turf levels in that difficulty. Example: 4 means Level 1, 2, 3, and 4.",
+    "A level ends only when the AI side's turf health reaches zero.",
+    "ai_spawn_min and ai_spawn_max control how often the AI tries to spawn another unit.",
+    "ai_max_active_units controls how many AI units may be alive on the battlefield at the same time.",
+    "ai_stat_bonus_per_level is a percent increase per new level. Example: 0.15 means 15% stronger each level.",
+    "ai_regen_bonus_per_level is a percent increase to AI treat regeneration each level.",
+    "ai_spawn_delay_reduction_per_level is a percent reduction to AI spawn delay each level."
+  ],
+  "economy": {
+    "energy_max": 120
+  },
+  "combat": {
+    "attack_range": 52,
+    "attack_cooldown": 0.75
+  },
+  "unit_key_order": [
+    "fast",
+    "strong",
+    "tough",
+    "weak"
+  ],
+  "units": {
+    "fast": {
+      "label": "Fast",
+      "description": "Cheap and quick. Good for rushing lanes.",
+      "cost": 30,
+      "hp": 28,
+      "damage": 8,
+      "speed": 88.0,
+      "spawn_weight": 45,
+      "sprite_style": "fast"
+    },
+    "strong": {
+      "label": "Strong",
+      "description": "Balanced attacker with solid damage.",
+      "cost": 50,
+      "hp": 52,
+      "damage": 14,
+      "speed": 52.0,
+      "spawn_weight": 35,
+      "sprite_style": "strong"
+    },
+    "tough": {
+      "label": "Tough",
+      "description": "Expensive tank with high health.",
+      "cost": 75,
+      "hp": 82,
+      "damage": 10,
+      "speed": 42.0,
+      "spawn_weight": 20,
+      "sprite_style": "tough"
+    },
+    "weak": {
+      "label": "Weak",
+      "description": "Small cheap helper that swarms in numbers.",
+      "cost": 18,
+      "hp": 20,
+      "damage": 5,
+      "speed": 74.0,
+      "spawn_weight": 30,
+      "sprite_style": "fast"
+    }
+  },
+  "difficulties": {
+    "easy": {
+      "label": "Easy",
+      "starting_energy": 95.0,
+      "energy_regen_per_second": 22.0,
+      "ai_spawn_min": 1.9,
+      "ai_spawn_max": 3.2,
+      "ai_max_active_units": 4,
+      "starting_turf_hp": 18,
+      "level_count": 3,
+      "ai_stat_bonus_per_level": 0.12,
+      "ai_regen_bonus_per_level": 0.08,
+      "ai_spawn_delay_reduction_per_level": 0.06
+    },
+    "novice": {
+      "label": "Novice",
+      "starting_energy": 75.0,
+      "energy_regen_per_second": 18.0,
+      "ai_spawn_min": 1.4,
+      "ai_spawn_max": 2.5,
+      "ai_max_active_units": 5,
+      "starting_turf_hp": 15,
+      "level_count": 4,
+      "ai_stat_bonus_per_level": 0.15,
+      "ai_regen_bonus_per_level": 0.1,
+      "ai_spawn_delay_reduction_per_level": 0.08
+    },
+    "expert": {
+      "label": "Expert",
+      "starting_energy": 60.0,
+      "energy_regen_per_second": 14.0,
+      "ai_spawn_min": 0.95,
+      "ai_spawn_max": 1.8,
+      "ai_max_active_units": 6,
+      "starting_turf_hp": 12,
+      "level_count": 5,
+      "ai_stat_bonus_per_level": 0.18,
+      "ai_regen_bonus_per_level": 0.12,
+      "ai_spawn_delay_reduction_per_level": 0.1
+    }
+  }
+}

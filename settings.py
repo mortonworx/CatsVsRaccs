@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 
@@ -6,6 +7,11 @@ BASE_DIR = Path(__file__).resolve().parent
 
 def resource_path(*parts):
     return str(BASE_DIR.joinpath(*parts))
+
+
+def load_json(path):
+    with Path(path).open(encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 TITLE = "Cats vs Raccoons - Turf Defenders"
@@ -19,28 +25,19 @@ LANE_Y = [180, 310, 440]
 
 LEFT_TURF_X = 110
 RIGHT_TURF_X = WINDOW_WIDTH - 110
-STARTING_TURF_HP = 15
 
 BACKGROUND_COLOR = "#b9e3a6"
 LANE_COLOR = "#95c47d"
 TEXT_COLOR = "#1f1f1f"
 
-ENERGY_MAX = 120
-ENERGY_REGEN_PER_SECOND = 18
-STARTING_ENERGY = 75.0
-
-AI_SPAWN_MIN = 1.4
-AI_SPAWN_MAX = 2.5
-
 CAT_START_X = 80
 RACCOON_START_X = WINDOW_WIDTH - 80
-
 GOAL_PADDING = 35
 
-ATTACK_RANGE = 52
-ATTACK_COOLDOWN = 0.75
-
 SPRITE_SHEET_PATH = resource_path("assets", "cats_raccoons_walk_attack_pretty.png")
+TITLE_ART_PATH = resource_path("assets", "title_screen_art.png")
+BALANCE_CONFIG_PATH = resource_path("assets", "game_balance.json")
+
 SPRITE_CELL_W = 96
 SPRITE_CELL_H = 96
 SPRITE_SCALE = 1.0
@@ -61,53 +58,47 @@ LOSE_SOUND_PATH = resource_path("assets", "audio", "sfx", "lose_sting.wav")
 
 ANIMATION_FRAME_TIME = 0.14
 
-DIFFICULTY_SETTINGS = {
-    "easy": {
-        "label": "Easy",
-        "starting_energy": 95.0,
-        "energy_regen_per_second": 22,
-        "ai_spawn_min": 1.9,
-        "ai_spawn_max": 3.2,
-        "starting_turf_hp": 18,
-    },
-    "novice": {
-        "label": "Novice",
-        "starting_energy": STARTING_ENERGY,
-        "energy_regen_per_second": ENERGY_REGEN_PER_SECOND,
-        "ai_spawn_min": AI_SPAWN_MIN,
-        "ai_spawn_max": AI_SPAWN_MAX,
-        "starting_turf_hp": STARTING_TURF_HP,
-    },
-    "expert": {
-        "label": "Expert",
-        "starting_energy": 60.0,
-        "energy_regen_per_second": 14,
-        "ai_spawn_min": 0.95,
-        "ai_spawn_max": 1.8,
-        "starting_turf_hp": 12,
-    },
+BALANCE_DATA = load_json(BALANCE_CONFIG_PATH)
+
+ENERGY_MAX = BALANCE_DATA["economy"]["energy_max"]
+ATTACK_RANGE = BALANCE_DATA["combat"]["attack_range"]
+ATTACK_COOLDOWN = BALANCE_DATA["combat"]["attack_cooldown"]
+
+UNIT_ORDER = BALANCE_DATA["unit_key_order"]
+UNIT_TYPES = BALANCE_DATA["units"]
+DIFFICULTY_SETTINGS = BALANCE_DATA["difficulties"]
+DIFFICULTY_ORDER = list(DIFFICULTY_SETTINGS.keys())
+
+UNIT_KEYBINDS = {
+    str(index): unit_kind
+    for index, unit_kind in enumerate(UNIT_ORDER, start=1)
 }
 
-UNIT_TYPES = {
-    "strong": {
-        "cost": 50,
-        "hp": 52,
-        "damage": 14,
-        "speed": 52.0,
-    },
-    "fast": {
-        "cost": 30,
-        "hp": 28,
-        "damage": 8,
-        "speed": 88.0,
-    },
-    "tough": {
-        "cost": 75,
-        "hp": 82,
-        "damage": 10,
-        "speed": 42.0,
-    },
+SPRITE_STYLES = {
+    unit_kind: unit_data.get("sprite_style", unit_kind)
+    for unit_kind, unit_data in UNIT_TYPES.items()
 }
+
+
+def default_unit_kind():
+    return UNIT_ORDER[0]
+
+
+def unit_label(unit_kind):
+    return UNIT_TYPES[unit_kind].get("label", unit_kind.capitalize())
+
+
+def unit_description(unit_kind):
+    return UNIT_TYPES[unit_kind].get("description", "")
+
+
+def ai_spawn_weight(unit_kind):
+    return UNIT_TYPES[unit_kind].get("spawn_weight", 0)
+
+
+def sprite_style(unit_kind):
+    return SPRITE_STYLES[unit_kind]
+
 
 # Sprite sheet mapping.
 # 4 columns x 6 rows:
